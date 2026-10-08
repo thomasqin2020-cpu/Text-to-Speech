@@ -390,7 +390,9 @@ async function playFrom(i) {
     if (playing) {
       try { await audio.play(); }
       catch (e) {
-        if (e.name !== "AbortError") { setPlaying(false); showError("Your browser blocked automatic playback. Press ▶ to start."); }
+        if (e.name === "AbortError") return;
+        setPlaying(false);
+        showError(e.name === "NotAllowedError" ? "Your browser blocked automatic playback. Press ▶ to start." : `Playback failed: ${e.message}`);
       }
     }
   } catch (e) {
