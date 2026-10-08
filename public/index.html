@@ -183,6 +183,9 @@ const audio = $("audio");
 const CHUNK_TARGET = 1000;   // characters per ElevenLabs request; keeps each call well inside the function timeout
 const PREFETCH = 2;          // passages generated ahead of the one playing
 const WPM = 160;             // typical narration pace, for the time estimate
+// 100 ms of silence. Played inside the Start click so Safari and iOS allow later play() calls
+// that happen after a network request, outside any user gesture.
+const SILENCE = "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
 
 let engine = store("engine") || "eleven";
 let elevenVoices = [];
@@ -384,11 +387,21 @@ async function playFrom(i) {
     if (current !== i) return;          // user skipped while this was loading
     audio.src = c.url;
     audio.playbackRate = Number($("speed").value);
-    if (playing) await audio.play();
+    if (playing) {
+      try { await audio.play(); }
+      catch (e) {
+        if (e.name !== "AbortError") { setPlaying(false); showError("Your browser blocked automatic playback. Press ▶ to start."); }
+      }
+    }
   } catch (e) {
     showError(e.message);
     setPlaying(false);
   }
+}
+
+function unlockAudio() {
+  audio.src = SILENCE;
+  audio.play().catch(() => {});
 }
 
 audio.addEventListener("ended", onPassageEnd);
@@ -448,6 +461,7 @@ function startReading(fromIndex) {
     reader.appendChild(el);
     return { text: ch.text, el };
   });
+  unlockAudio();
   $("setup").style.display = "none";
   reader.style.display = "block";
   $("readerTools").style.display = "flex";
@@ -537,7 +551,10 @@ function setPlaying(p) { playing = p; $("play").textContent = p ? "⏸" : "▶";
 function updateStatus() {
   const shown = Math.min(current + 1, chunks.length);
   let s = `Passage ${shown} / ${chunks.length}`;
-  if (engine === "eleven") s += ` · ${chunks.filter(c => c.blob).length} generated`;
+  if (engine === "eleven") {
+    const cur = chunks[current];
+    s += cur && !cur.blob ? " · generating…" : ` · ${chunks.filter(c => c.blob).length} ready`;
+  }
   $("status").textContent = s;
   $("download").disabled = !chunks.length;
   updateProgress();
