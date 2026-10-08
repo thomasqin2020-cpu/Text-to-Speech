@@ -204,7 +204,7 @@ $("theme").onclick = () => applyTheme(root.dataset.theme === "dark" ? "light" : 
 
 // ---------- voices ----------
 async function loadElevenVoices() {
-  const r = await fetch("/api/voices");
+  const r = await fetch("/api/voices", { cache: "no-store" });
   const body = await readJson(r);
   if (!r.ok || !Array.isArray(body)) throw new Error(body.error || r.statusText);
   elevenVoices = body;

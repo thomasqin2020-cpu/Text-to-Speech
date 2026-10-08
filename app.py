@@ -33,6 +33,14 @@ def clamp(value, lo, hi, default):
         return default
 
 
+@app.after_request
+def no_store(resp):
+    # API responses must never be served from the CDN cache across deployments.
+    if request.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 @app.get("/")
 def index():
     return send_from_directory(PUBLIC, "index.html")
