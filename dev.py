@@ -6,8 +6,20 @@ from flask import Flask, send_from_directory
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.serving import run_simple
 
-from api.speak import app as speak_app
-from api.voices import app as voices_app
+
+
+def load(name):
+    """Import api/<name>.py by path; api/ is not a package so Vercel sees only the two functions."""
+    import importlib.util
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api", name + ".py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.app
+
+
+speak_app = load("speak")
+voices_app = load("voices")
 
 PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
 

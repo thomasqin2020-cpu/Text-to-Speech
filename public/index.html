@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Audiobook Reader</title>
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -202,6 +203,7 @@ $("theme").onclick = () => applyTheme(root.dataset.theme === "dark" ? "light" : 
 async function loadElevenVoices() {
   const r = await fetch("/api/voices");
   const body = await readJson(r);
+  if (!r.ok || !Array.isArray(body)) throw new Error(body.error || r.statusText);
   elevenVoices = body;
 }
 
@@ -393,6 +395,7 @@ audio.addEventListener("ended", onPassageEnd);
 audio.addEventListener("timeupdate", updateProgress);
 
 function onPassageEnd() {
+  if ($("bar").style.display !== "block") return;   // a voice preview ended on the setup screen
   if ($("sleep").value === "chapter") { $("sleep").value = "0"; setPlaying(false); return; }
   playFrom(current + 1);
 }
