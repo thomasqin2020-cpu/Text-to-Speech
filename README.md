@@ -4,7 +4,7 @@ Paste a long piece of text and have it read aloud like an audiobook with ElevenL
 
 ## Deploy on Vercel
 
-1. Import the repo at https://vercel.com/new. No framework preset is needed; Vercel picks up `api/index.py` and `public/`.
+1. Import the repo at https://vercel.com/new. No framework preset is needed; Vercel picks up the functions in `api/` and the page in `public/`.
 2. In the project's **Settings → Environment Variables**, add `ELEVENLABS_API_KEY` with your key from https://elevenlabs.io/app/settings/api-keys.
 3. Redeploy (Deployments → ⋯ → Redeploy). Environment variables only apply to deployments made after they're added.
 
@@ -17,10 +17,21 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env             # then put your ElevenLabs API key in .env
-python api/index.py
+python dev.py
 ```
 
 Open http://127.0.0.1:5000, paste text, pick a voice, and press **Start reading**.
+
+## Features
+
+- Two engines: ElevenLabs (your account's voices, billed per character) or the browser's built-in speech (free, unlimited, lower quality).
+- Voice previews, labels (gender, accent, age), and stability / similarity / style tuning.
+- Word count, listening-time estimate, and credit estimate before you commit.
+- Playback: speed 0.75× to 2×, 15-second skips, scrubbing, sleep timer, keyboard shortcuts.
+- Resume where you left off; the text and position are remembered in the browser.
+- Open or drag in a `.txt` file. Chapter headings are detected and styled.
+- Download the whole thing as one MP3 (ElevenLabs engine only).
+- Light and dark themes.
 
 ## How it works
 

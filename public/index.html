@@ -4,84 +4,174 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Audiobook Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f7f5f0; --panel: #ffffff; --text: #22201c; --muted: #6b665d;
-    --accent: #3b5bdb; --line: #e3dfd6; --current: #fff3bf; --done: #a8a399;
+    --bg: #f5f2ea; --panel: #fffdf8; --panel-2: #efebe1; --text: #1f1d19; --muted: #6f6a60;
+    --accent: #2f5bd9; --accent-text: #fff; --line: #ddd7ca; --current: #fbefc4; --done: #a39d91;
+    --danger: #c5401f; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(40,30,10,.07);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #17171a; --panel: #212126; --text: #ecebe8; --muted: #9a978f;
-      --accent: #7c93ff; --line: #33333a; --current: #3d3720; --done: #6c6a64;
-    }
+  :root[data-theme="dark"] {
+    --bg: #141416; --panel: #1d1d21; --panel-2: #26262c; --text: #ebe8e1; --muted: #9c988f;
+    --accent: #7f97ff; --accent-text: #0e1330; --line: #30303a; --current: #3a3418; --done: #6a675f;
+    --danger: #ff7a55; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 16px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
-  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 140px; }
-  h1 { font-size: 1.4rem; margin: 0 0 16px; }
-  textarea { width: 100%; min-height: 320px; padding: 14px; border: 1px solid var(--line);
-             border-radius: 10px; background: var(--panel); color: var(--text);
-             font: 17px/1.6 Georgia, serif; resize: vertical; }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
-  select, button { font: inherit; padding: 8px 12px; border-radius: 8px;
-                   border: 1px solid var(--line); background: var(--panel); color: var(--text); }
-  button { cursor: pointer; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  button:disabled { opacity: .5; cursor: default; }
-  .meta { color: var(--muted); font-size: .9rem; }
-  #reader { display: none; background: var(--panel); border: 1px solid var(--line);
-            border-radius: 10px; padding: 18px 22px; font: 18px/1.75 Georgia, serif; }
-  #reader p { margin: 0 0 .9em; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.5 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 150px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  header h1 { font: 600 1.35rem/1.2 Literata, Georgia, serif; margin: 0; letter-spacing: -.01em; }
+  header .sub { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+          box-shadow: var(--shadow); padding: 18px; margin-bottom: 16px; }
+  .card h2 { font: 600 .8rem/1 Inter, sans-serif; text-transform: uppercase; letter-spacing: .08em;
+             color: var(--muted); margin: 0 0 12px; }
+  textarea { width: 100%; min-height: 300px; padding: 16px; border: 1px solid var(--line);
+             border-radius: 10px; background: var(--panel-2); color: var(--text);
+             font: 17px/1.65 Literata, Georgia, serif; resize: vertical; }
+  textarea:focus, select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .drop { outline: 2px dashed var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .row + .row { margin-top: 12px; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 500; }
+  select, input[type=number], button { font: inherit; padding: 8px 12px; border-radius: 9px;
+                  border: 1px solid var(--line); background: var(--panel-2); color: var(--text); }
+  select { max-width: 320px; }
+  button { cursor: pointer; transition: transform .05s; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.ghost { background: transparent; }
+  button.icon { padding: 8px 10px; min-width: 40px; }
+  button:disabled { opacity: .45; cursor: default; }
+  .meta { color: var(--muted); font-size: .85rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+  .stat { background: var(--panel-2); border-radius: 10px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 1.1rem; font-weight: 600; }
+  .stat span { color: var(--muted); font-size: .78rem; }
+  input[type=range] { width: 150px; accent-color: var(--accent); }
+  details summary { cursor: pointer; color: var(--muted); font-size: .85rem; user-select: none; }
+  details[open] summary { margin-bottom: 10px; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; background: transparent; }
+  .seg button.on { background: var(--accent); color: var(--accent-text); }
+  #reader { display: none; padding: 22px 28px; font: 18.5px/1.8 Literata, Georgia, serif; }
+  #reader p { margin: 0 0 1em; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: background .15s; }
+  #reader p:hover { background: var(--panel-2); }
   #reader p.done { color: var(--done); }
   #reader p.current { background: var(--current); }
-  #reader p.loading::after { content: " ⏳"; }
+  #reader p.loading::after { content: " ·"; animation: blink 1s infinite; color: var(--muted); }
+  #reader p.h { font-weight: 600; font-size: 1.15em; margin-top: 1.4em; }
+  @keyframes blink { 50% { opacity: .2; } }
   #bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel);
-         border-top: 1px solid var(--line); padding: 10px 16px; display: none; }
-  #bar .inner { max-width: 820px; margin: 0 auto; }
-  progress { width: 100%; height: 6px; }
-  #error { color: #d9480f; white-space: pre-wrap; }
+         border-top: 1px solid var(--line); padding: 10px 16px 12px; display: none; box-shadow: 0 -8px 24px rgba(0,0,0,.08); }
+  #bar .inner { max-width: 860px; margin: 0 auto; }
+  #scrub { width: 100%; margin: 0 0 8px; }
+  #error { color: var(--danger); white-space: pre-wrap; margin: 8px 0 0; font-size: .9rem; }
+  kbd { font: .75rem/1 ui-monospace, monospace; background: var(--panel-2); border: 1px solid var(--line);
+        border-radius: 4px; padding: 2px 5px; }
+  .hidden { display: none !important; }
+  @media (max-width: 600px) { #reader { padding: 16px; font-size: 17px; } select { max-width: 100%; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Audiobook Reader</h1>
+  <header>
+    <div>
+      <h1>Audiobook Reader</h1>
+      <div class="sub">Paste anything. Hear it read.</div>
+    </div>
+    <div class="row">
+      <button class="ghost icon" id="theme" title="Toggle theme">◐</button>
+    </div>
+  </header>
 
   <div id="setup">
-    <textarea id="input" placeholder="Paste a chapter, an article, a whole book..."></textarea>
-    <div class="row">
-      <label>Voice <select id="voice"><option>Loading...</option></select></label>
-      <label>Model
-        <select id="model">
-          <option value="eleven_multilingual_v2">Multilingual v2 (best quality)</option>
-          <option value="eleven_flash_v2_5">Flash v2.5 (faster, half the credits)</option>
-        </select>
-      </label>
-      <button class="primary" id="start">Start reading</button>
-      <span class="meta" id="count"></span>
-    </div>
+    <section class="card">
+      <h2>Text</h2>
+      <textarea id="input" placeholder="Paste a chapter, an article, a whole book… or drop a .txt file here."></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="ghost" id="loadFile">Open .txt file</button>
+        <input type="file" id="file" accept=".txt,.md,text/plain" class="hidden">
+        <button class="ghost" id="clear">Clear</button>
+        <span class="meta" id="count"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Voice</h2>
+      <div class="row">
+        <label class="f">Engine
+          <div class="seg" id="engine">
+            <button data-v="eleven" class="on">ElevenLabs</button>
+            <button data-v="browser">Browser (free)</button>
+          </div>
+        </label>
+        <label class="f">Voice
+          <select id="voice"><option>Loading…</option></select>
+        </label>
+        <button class="ghost" id="preview" title="Play a short sample">▶ Preview</button>
+        <label class="f" id="modelWrap">Model
+          <select id="model">
+            <option value="eleven_multilingual_v2">Multilingual v2 (best quality)</option>
+            <option value="eleven_flash_v2_5">Flash v2.5 (faster, half the credits)</option>
+            <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+          </select>
+        </label>
+      </div>
+      <details id="tuning" style="margin-top:12px">
+        <summary>Voice tuning</summary>
+        <div class="row">
+          <label class="f">Stability <input type="range" id="stability" min="0" max="1" step="0.05" value="0.5"></label>
+          <label class="f">Similarity <input type="range" id="similarity" min="0" max="1" step="0.05" value="0.75"></label>
+          <label class="f">Style <input type="range" id="style" min="0" max="1" step="0.05" value="0"></label>
+        </div>
+        <p class="meta" style="margin:8px 0 0">Lower stability = more expressive, less consistent. Style above 0 costs some stability; leave it at 0 for narration.</p>
+      </details>
+      <div class="stats">
+        <div class="stat"><b id="sWords">0</b><span>words</span></div>
+        <div class="stat"><b id="sTime">0 min</b><span>estimated listening time</span></div>
+        <div class="stat"><b id="sCredits">0</b><span id="sCreditsLabel">ElevenLabs credits</span></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="start">Start reading</button>
+        <button class="ghost" id="resume" style="display:none">Resume where I left off</button>
+      </div>
+    </section>
   </div>
 
-  <div id="reader"></div>
-  <div class="row"><button id="edit" style="display:none">Edit text</button></div>
+  <section class="card" id="reader"></section>
+  <div class="row" id="readerTools" style="display:none">
+    <button class="ghost" id="edit">← Edit text</button>
+    <span class="meta">Click a paragraph to jump. <kbd>Space</kbd> play/pause · <kbd>←</kbd> <kbd>→</kbd> passage · <kbd>[</kbd> <kbd>]</kbd> speed</span>
+  </div>
   <p id="error"></p>
 </main>
 
 <div id="bar"><div class="inner">
-  <div class="row" style="margin:0 0 6px">
-    <button id="prev" title="Previous passage">⏮</button>
-    <button class="primary" id="play">⏸</button>
-    <button id="next" title="Next passage">⏭</button>
-    <label>Speed
+  <input type="range" id="scrub" min="0" max="1000" value="0">
+  <div class="row">
+    <button class="icon" id="prev" title="Previous passage">⏮</button>
+    <button class="icon" id="back" title="Back 15 s">↺15</button>
+    <button class="primary icon" id="play">⏸</button>
+    <button class="icon" id="fwd" title="Forward 15 s">15↻</button>
+    <button class="icon" id="next" title="Next passage">⏭</button>
+    <label class="f">Speed
       <select id="speed">
         <option>0.75</option><option>0.9</option><option selected>1</option>
-        <option>1.1</option><option>1.25</option><option>1.5</option><option>2</option>
+        <option>1.1</option><option>1.25</option><option>1.5</option><option>1.75</option><option>2</option>
+      </select>
+    </label>
+    <label class="f">Sleep
+      <select id="sleep">
+        <option value="0">off</option><option value="15">15 min</option><option value="30">30 min</option>
+        <option value="45">45 min</option><option value="60">60 min</option><option value="chapter">end of passage</option>
       </select>
     </label>
     <button id="download" disabled>Download MP3</button>
     <span class="meta" id="status"></span>
   </div>
-  <progress id="progress" value="0" max="1"></progress>
 </div></div>
 
 <audio id="audio"></audio>
@@ -89,27 +179,123 @@
 <script>
 const $ = id => document.getElementById(id);
 const audio = $("audio");
-const CHUNK_TARGET = 1000;   // characters per request; keeps each call well under the function timeout
+const CHUNK_TARGET = 1000;   // characters per ElevenLabs request; keeps each call well inside the function timeout
 const PREFETCH = 2;          // passages generated ahead of the one playing
+const WPM = 160;             // typical narration pace, for the time estimate
 
-let chunks = [];             // [{text, el, blob, url, promise}]
+let engine = store("engine") || "eleven";
+let elevenVoices = [];
+let browserVoices = [];
+let chunks = [];             // [{text, el, blob, url, promise, heading}]
 let current = 0;
 let playing = false;
+let sleepTimer = null;
+let textKey = "";
+
+// ---------- theme ----------
+const root = document.documentElement;
+function applyTheme(t) { root.dataset.theme = t; store("theme", t); }
+applyTheme(store("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("theme").onclick = () => applyTheme(root.dataset.theme === "dark" ? "light" : "dark");
 
 // ---------- voices ----------
-fetch("/api/voices").then(r => r.json()).then(list => {
-  if (list.error) throw new Error(list.error);
+async function loadElevenVoices() {
+  const r = await fetch("/api/voices");
+  const body = await readJson(r);
+  elevenVoices = body;
+}
+
+function loadBrowserVoices() {
+  browserVoices = speechSynthesis.getVoices()
+    .sort((a, b) => (b.lang.startsWith("en") - a.lang.startsWith("en")) || a.name.localeCompare(b.name));
+}
+if ("speechSynthesis" in window) {
+  loadBrowserVoices();
+  speechSynthesis.onvoiceschanged = () => { loadBrowserVoices(); if (engine === "browser") fillVoices(); };
+}
+
+function fillVoices() {
   const sel = $("voice");
   sel.innerHTML = "";
-  for (const v of list) sel.add(new Option(`${v.name} (${v.category})`, v.id));
-  const saved = localStorageGet("voice");
-  if (saved && list.some(v => v.id === saved)) sel.value = saved;
-}).catch(e => showError("Could not load voices: " + e.message));
+  if (engine === "eleven") {
+    if (!elevenVoices.length) { sel.add(new Option("No voices loaded")); return; }
+    for (const v of elevenVoices) {
+      const tags = [v.labels.gender, v.labels.accent, v.labels.age].filter(Boolean).join(", ");
+      sel.add(new Option(`${v.name}${tags ? " · " + tags : ""}`, v.id));
+    }
+  } else {
+    if (!browserVoices.length) { sel.add(new Option("No browser voices available")); return; }
+    browserVoices.forEach((v, i) => sel.add(new Option(`${v.name} (${v.lang})`, i)));
+  }
+  const saved = store("voice:" + engine);
+  if (saved && [...sel.options].some(o => o.value === saved)) sel.value = saved;
+}
 
-$("input").addEventListener("input", () => {
-  const n = $("input").value.length;
-  $("count").textContent = n ? `${n.toLocaleString()} characters` : "";
-});
+function setEngine(e) {
+  engine = e;
+  store("engine", e);
+  for (const b of $("engine").children) b.classList.toggle("on", b.dataset.v === e);
+  $("modelWrap").style.display = e === "eleven" ? "" : "none";
+  $("tuning").style.display = e === "eleven" ? "" : "none";
+  $("download").style.display = e === "eleven" ? "" : "none";
+  fillVoices();
+  updateStats();
+}
+$("engine").onclick = ev => { const b = ev.target.closest("button"); if (b) setEngine(b.dataset.v); };
+$("voice").onchange = () => store("voice:" + engine, $("voice").value);
+
+$("preview").onclick = () => {
+  if (engine === "eleven") {
+    const v = elevenVoices.find(v => v.id === $("voice").value);
+    if (!v?.preview_url) { showError("This voice has no preview clip."); return; }
+    audio.src = v.preview_url; audio.playbackRate = 1; audio.play();
+  } else {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance("The first move is what sets everything in motion.");
+    u.voice = browserVoices[Number($("voice").value)];
+    speechSynthesis.speak(u);
+  }
+};
+
+loadElevenVoices().catch(e => showError("Could not load ElevenLabs voices: " + e.message))
+  .finally(() => setEngine(engine));
+
+// ---------- text input ----------
+const input = $("input");
+input.value = store("text") || "";
+input.addEventListener("input", () => { store("text", input.value); updateStats(); });
+$("clear").onclick = () => { input.value = ""; store("text", ""); updateStats(); };
+$("loadFile").onclick = () => $("file").click();
+$("file").onchange = () => readFile($("file").files[0]);
+input.addEventListener("dragover", e => { e.preventDefault(); input.classList.add("drop"); });
+input.addEventListener("dragleave", () => input.classList.remove("drop"));
+input.addEventListener("drop", e => { e.preventDefault(); input.classList.remove("drop"); readFile(e.dataTransfer.files[0]); });
+function readFile(f) {
+  if (!f) return;
+  f.text().then(t => { input.value = t; store("text", t); updateStats(); });
+}
+
+function updateStats() {
+  const text = input.value.trim();
+  const chars = text.length;
+  const words = text ? text.split(/\s+/).length : 0;
+  $("count").textContent = chars ? `${chars.toLocaleString()} characters` : "";
+  $("sWords").textContent = words.toLocaleString();
+  $("sTime").textContent = fmtMinutes(words / WPM);
+  if (engine === "eleven") {
+    const rate = $("model").value === "eleven_multilingual_v2" ? 1 : 0.5;
+    $("sCredits").textContent = Math.ceil(chars * rate).toLocaleString();
+    $("sCreditsLabel").textContent = "ElevenLabs credits";
+  } else {
+    $("sCredits").textContent = "0";
+    $("sCreditsLabel").textContent = "credits (browser engine is free)";
+  }
+  const key = hashText(text);
+  const pos = store("pos:" + key);
+  $("resume").style.display = pos && Number(pos) > 0 ? "" : "none";
+}
+$("model").onchange = updateStats;
+updateStats();
 
 // ---------- chunking ----------
 // Split on paragraphs, then pack sentences so no request exceeds CHUNK_TARGET.
@@ -117,26 +303,30 @@ function makeChunks(text) {
   const out = [];
   const paras = text.replace(/\r/g, "").split(/\n\s*\n+/).map(p => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
   for (const para of paras) {
-    if (para.length <= CHUNK_TARGET) { out.push(para); continue; }
+    const heading = para.length < 80 && (
+      /^(chapter|part|book|prologue|epilogue)\b/i.test(para) ||
+      (para === para.toUpperCase() && /[A-Z]/.test(para)) ||
+      (para.length < 50 && !/["”.!?,;:]$/.test(para)));
+    if (para.length <= CHUNK_TARGET) { out.push({ text: para, heading }); continue; }
     const sentences = para.match(/[^.!?…]+[.!?…]+["”’)\]]*\s*|[^.!?…]+$/g) || [para];
     let buf = "";
     for (let s of sentences) {
-      // A single runaway sentence still has to fit; break it on spaces.
       while (s.length > CHUNK_TARGET) {
-        const cut = s.lastIndexOf(" ", CHUNK_TARGET) > 0 ? s.lastIndexOf(" ", CHUNK_TARGET) : CHUNK_TARGET;
-        if (buf) { out.push(buf.trim()); buf = ""; }
-        out.push(s.slice(0, cut).trim());
+        const sp = s.lastIndexOf(" ", CHUNK_TARGET);
+        const cut = sp > 0 ? sp : CHUNK_TARGET;
+        if (buf) { out.push({ text: buf.trim() }); buf = ""; }
+        out.push({ text: s.slice(0, cut).trim() });
         s = s.slice(cut);
       }
-      if ((buf + s).length > CHUNK_TARGET && buf) { out.push(buf.trim()); buf = ""; }
+      if ((buf + s).length > CHUNK_TARGET && buf) { out.push({ text: buf.trim() }); buf = ""; }
       buf += s;
     }
-    if (buf.trim()) out.push(buf.trim());
+    if (buf.trim()) out.push({ text: buf.trim() });
   }
   return out;
 }
 
-// ---------- generation ----------
+// ---------- ElevenLabs generation ----------
 function load(i) {
   const c = chunks[i];
   if (!c) return Promise.resolve(null);
@@ -151,9 +341,14 @@ function load(i) {
       model_id: $("model").value,
       previous_text: chunks[i - 1]?.text.slice(-500) || "",
       next_text: chunks[i + 1]?.text.slice(0, 500) || "",
+      voice_settings: {
+        stability: Number($("stability").value),
+        similarity_boost: Number($("similarity").value),
+        style: Number($("style").value),
+      },
     }),
   }).then(async r => {
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
+    if (!r.ok) throw new Error((await readJson(r).catch(e => ({ error: e.message }))).error || r.statusText);
     c.blob = await r.blob();
     c.url = URL.createObjectURL(c.blob);
     c.el.classList.remove("loading");
@@ -167,15 +362,20 @@ function load(i) {
   return c.promise;
 }
 
+// ---------- playback ----------
 async function playFrom(i) {
+  stopBrowserSpeech();
   if (i < 0 || i >= chunks.length) { finish(); return; }
   current = i;
+  store("pos:" + textKey, String(i));
   chunks.forEach((c, k) => {
     c.el.classList.toggle("current", k === i);
     c.el.classList.toggle("done", k < i);
   });
   chunks[i].el.scrollIntoView({ behavior: "smooth", block: "center" });
   updateStatus();
+  showError("");
+  if (engine === "browser") { speakBrowser(i); return; }
   try {
     const c = await load(i);
     for (let k = 1; k <= PREFETCH; k++) load(i + k).catch(() => {});
@@ -189,56 +389,113 @@ async function playFrom(i) {
   }
 }
 
-audio.addEventListener("ended", () => playFrom(current + 1));
+audio.addEventListener("ended", onPassageEnd);
 audio.addEventListener("timeupdate", updateProgress);
+
+function onPassageEnd() {
+  if ($("sleep").value === "chapter") { $("sleep").value = "0"; setPlaying(false); return; }
+  playFrom(current + 1);
+}
+
+// Browser engine: speak sentence by sentence; long utterances get cut off in some browsers.
+let browserRun = 0;
+function speakBrowser(i) {
+  const run = ++browserRun;
+  const sentences = chunks[i].text.match(/[^.!?…]+[.!?…]+["”’)\]]*\s*|[^.!?…]+$/g) || [chunks[i].text];
+  let k = 0;
+  const next = () => {
+    if (run !== browserRun) return;
+    if (k >= sentences.length) { onPassageEnd(); return; }
+    const u = new SpeechSynthesisUtterance(sentences[k++]);
+    u.voice = browserVoices[Number($("voice").value)] || null;
+    u.rate = Number($("speed").value);
+    u.onend = next;
+    u.onerror = e => { if (e.error !== "interrupted" && e.error !== "canceled") showError("Browser speech error: " + e.error); };
+    speechSynthesis.speak(u);
+    $("scrub").value = Math.round(1000 * k / sentences.length);
+  };
+  speechSynthesis.cancel();
+  if (playing) next();
+}
+function stopBrowserSpeech() { browserRun++; if ("speechSynthesis" in window) speechSynthesis.cancel(); }
 
 function finish() {
   setPlaying(false);
   chunks.forEach(c => { c.el.classList.remove("current"); c.el.classList.add("done"); });
   current = chunks.length;
+  store("pos:" + textKey, "0");
   updateStatus();
 }
 
 // ---------- controls ----------
-$("start").onclick = () => {
-  const text = $("input").value.trim();
+function startReading(fromIndex) {
+  const text = input.value.trim();
   if (!text) return;
+  if (engine === "eleven" && !elevenVoices.length) { showError("ElevenLabs voices didn't load, so nothing can be generated. Fix the error above or switch to the browser engine."); return; }
   showError("");
-  localStorageSet("voice", $("voice").value);
+  textKey = hashText(text);
   chunks.forEach(c => c.url && URL.revokeObjectURL(c.url));
   const reader = $("reader");
   reader.innerHTML = "";
-  chunks = makeChunks(text).map((t, i) => {
+  chunks = makeChunks(text).map((ch, i) => {
     const el = document.createElement("p");
-    el.textContent = t;
+    el.textContent = ch.text;
+    if (ch.heading) el.classList.add("h");
     el.onclick = () => { setPlaying(true); playFrom(i); };
     reader.appendChild(el);
-    return { text: t, el };
+    return { text: ch.text, el };
   });
   $("setup").style.display = "none";
   reader.style.display = "block";
-  $("edit").style.display = "inline-block";
+  $("readerTools").style.display = "flex";
   $("bar").style.display = "block";
   setPlaying(true);
-  playFrom(0);
-};
+  playFrom(Math.min(fromIndex, chunks.length - 1));
+}
+$("start").onclick = () => startReading(0);
+$("resume").onclick = () => startReading(Number(store("pos:" + hashText(input.value.trim())) || 0));
 
 $("edit").onclick = () => {
-  audio.pause(); setPlaying(false);
+  audio.pause(); stopBrowserSpeech(); setPlaying(false);
   $("setup").style.display = "block";
   $("reader").style.display = "none";
-  $("edit").style.display = "none";
+  $("readerTools").style.display = "none";
   $("bar").style.display = "none";
+  updateStats();
 };
 
-$("play").onclick = () => {
+$("play").onclick = togglePlay;
+function togglePlay() {
   if (current >= chunks.length) { setPlaying(true); playFrom(0); return; }
   setPlaying(!playing);
+  if (engine === "browser") {
+    if (playing) { if (speechSynthesis.paused) speechSynthesis.resume(); else speakBrowser(current); }
+    else speechSynthesis.pause();
+    return;
+  }
   if (playing) audio.src ? audio.play() : playFrom(current); else audio.pause();
-};
-$("prev").onclick = () => playFrom(Math.max(0, audio.currentTime > 3 ? current : current - 1));
+}
+$("prev").onclick = () => playFrom(Math.max(0, audio.currentTime > 3 && engine === "eleven" ? current : current - 1));
 $("next").onclick = () => playFrom(current + 1);
-$("speed").onchange = () => { audio.playbackRate = Number($("speed").value); };
+$("back").onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 15); };
+$("fwd").onclick = () => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 15); };
+$("speed").onchange = () => {
+  audio.playbackRate = Number($("speed").value);
+  store("speed", $("speed").value);
+  if (engine === "browser" && playing) speakBrowser(current);
+};
+$("speed").value = store("speed") || "1";
+$("scrub").oninput = () => {
+  if (engine === "eleven" && audio.duration) audio.currentTime = audio.duration * $("scrub").value / 1000;
+};
+
+$("sleep").onchange = () => {
+  clearTimeout(sleepTimer);
+  const v = $("sleep").value;
+  if (v !== "0" && v !== "chapter") {
+    sleepTimer = setTimeout(() => { setPlaying(false); audio.pause(); if (engine === "browser") speechSynthesis.pause(); $("sleep").value = "0"; }, Number(v) * 60000);
+  }
+};
 
 // MP3 frames concatenate cleanly, so the full book is just the blobs joined.
 $("download").onclick = async () => {
@@ -261,32 +518,56 @@ $("download").onclick = async () => {
 };
 
 document.addEventListener("keydown", e => {
-  if (e.target.tagName === "TEXTAREA" || $("bar").style.display !== "block") return;
-  if (e.code === "Space") { e.preventDefault(); $("play").click(); }
-  if (e.code === "ArrowRight") $("next").click();
-  if (e.code === "ArrowLeft") $("prev").click();
+  if (e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT" || $("bar").style.display !== "block") return;
+  if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+  else if (e.code === "ArrowRight") $("next").click();
+  else if (e.code === "ArrowLeft") $("prev").click();
+  else if (e.key === "]" || e.key === "[") {
+    const o = $("speed").options, i = $("speed").selectedIndex + (e.key === "]" ? 1 : -1);
+    if (o[i]) { $("speed").selectedIndex = i; $("speed").onchange(); }
+  }
 });
 
 // ---------- helpers ----------
 function setPlaying(p) { playing = p; $("play").textContent = p ? "⏸" : "▶"; }
 
 function updateStatus() {
-  const ready = chunks.filter(c => c.blob).length;
   const shown = Math.min(current + 1, chunks.length);
-  $("status").textContent = `Passage ${shown} / ${chunks.length} · ${ready} generated`;
+  let s = `Passage ${shown} / ${chunks.length}`;
+  if (engine === "eleven") s += ` · ${chunks.filter(c => c.blob).length} generated`;
+  $("status").textContent = s;
   $("download").disabled = !chunks.length;
   updateProgress();
 }
 
 function updateProgress() {
-  if (!chunks.length) return;
+  if (!chunks.length || engine !== "eleven") return;
   const frac = audio.duration ? audio.currentTime / audio.duration : 0;
-  $("progress").value = (Math.min(current, chunks.length) + (current < chunks.length ? frac : 0)) / chunks.length;
+  $("scrub").value = Math.round(1000 * frac);
+}
+
+function fmtMinutes(m) {
+  if (m < 1) return "< 1 min";
+  if (m < 60) return `${Math.round(m)} min`;
+  return `${Math.floor(m / 60)} h ${Math.round(m % 60)} min`;
+}
+
+async function readJson(r) {
+  const t = await r.text();
+  try { return JSON.parse(t); }
+  catch { throw new Error(`${r.status} ${r.statusText}: server returned ${t.slice(0, 40).replace(/\s+/g, " ")}…`); }
+}
+
+function hashText(t) {
+  let h = 2166136261;
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(16) + ":" + t.length;
 }
 
 function showError(msg) { $("error").textContent = msg; }
-function localStorageGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
-function localStorageSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+function store(k, v) {
+  try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; }
+}
 </script>
 </body>
 </html>
