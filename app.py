@@ -1,4 +1,4 @@
-"""POST /api/speak: one passage of text to MP3 audio."""
+"""Audiobook reader backend: a Flask app that Vercel runs as the project's entrypoint."""
 
 import os
 
@@ -6,19 +6,24 @@ from dotenv import load_dotenv
 from elevenlabs import VoiceSettings
 from elevenlabs.client import ElevenLabs
 from elevenlabs.core.api_error import ApiError
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 load_dotenv()
 
-app = Flask(__name__)
-app.url_map.strict_slashes = False
+PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
+app = Flask(__name__, static_folder=PUBLIC, static_url_path="")
 
-MAX_CHUNK_CHARS = 5000  # multilingual_v2 per-request limit; the client sends far less
+MAX_CHUNK_CHARS = 5000  # multilingual_v2 per-request limit; the page sends far less
 
 MISSING_KEY = (
     "ELEVENLABS_API_KEY is not set. On Vercel: Project → Settings → Environment Variables, "
     "add it, then redeploy. Locally: put it in a .env file."
 )
+
+
+def get_client():
+    key = os.environ.get("ELEVENLABS_API_KEY")
+    return ElevenLabs(api_key=key) if key else None
 
 
 def clamp(value, lo, hi, default):
@@ -28,14 +33,39 @@ def clamp(value, lo, hi, default):
         return default
 
 
-# Vercel may hand the function any of /api/speak, /api/speak.py or /, so match everything.
-@app.post("/", defaults={"_path": ""})
-@app.post("/<path:_path>")
-def speak(_path):
-    key = os.environ.get("ELEVENLABS_API_KEY")
-    if not key:
+@app.get("/")
+def index():
+    return send_from_directory(PUBLIC, "index.html")
+
+
+@app.get("/api/voices")
+def voices():
+    client = get_client()
+    if client is None:
         return jsonify(error=MISSING_KEY), 500
-    client = ElevenLabs(api_key=key)
+    try:
+        result = client.voices.search(page_size=100)
+    except ApiError as e:
+        return jsonify(error=f"ElevenLabs error {e.status_code}: {e.body}"), 502
+    return jsonify(
+        [
+            {
+                "id": v.voice_id,
+                "name": v.name,
+                "category": v.category,
+                "labels": v.labels or {},
+                "preview_url": v.preview_url,
+            }
+            for v in result.voices
+        ]
+    )
+
+
+@app.post("/api/speak")
+def speak():
+    client = get_client()
+    if client is None:
+        return jsonify(error=MISSING_KEY), 500
 
     data = request.get_json(force=True, silent=True) or {}
     text = (data.get("text") or "").strip()
@@ -75,3 +105,9 @@ def speak(_path):
         return jsonify(error=f"ElevenLabs error {e.status_code}: {e.body}"), 502
 
     return Response(audio, mimetype="audio/mpeg")
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Open http://127.0.0.1:{port}")
+    app.run(host="127.0.0.1", port=port, debug=True)

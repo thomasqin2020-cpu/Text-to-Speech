@@ -4,7 +4,7 @@ Paste a long piece of text and have it read aloud like an audiobook with ElevenL
 
 ## Deploy on Vercel
 
-1. Import the repo at https://vercel.com/new. No framework preset is needed; Vercel picks up the functions in `api/` and the page in `public/`.
+1. Import the repo at https://vercel.com/new. No framework preset is needed; Vercel runs `app.py` as the entrypoint declared in `pyproject.toml` and serves `public/` as static files.
 2. In the project's **Settings → Environment Variables**, add `ELEVENLABS_API_KEY` with your key from https://elevenlabs.io/app/settings/api-keys.
 3. Redeploy (Deployments → ⋯ → Redeploy). Environment variables only apply to deployments made after they're added.
 
@@ -17,7 +17,7 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env             # then put your ElevenLabs API key in .env
-python dev.py
+python app.py
 ```
 
 Open http://127.0.0.1:5000, paste text, pick a voice, and press **Start reading**.
