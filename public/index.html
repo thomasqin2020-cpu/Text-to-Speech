@@ -89,7 +89,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const audio = $("audio");
-const CHUNK_TARGET = 1500;   // characters per request; small enough to start fast
+const CHUNK_TARGET = 1000;   // characters per request; keeps each call well under the function timeout
 const PREFETCH = 2;          // passages generated ahead of the one playing
 
 let chunks = [];             // [{text, el, blob, url, promise}]
